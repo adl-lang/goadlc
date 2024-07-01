@@ -71,7 +71,7 @@ var reservedNames = []string{"C", "c", "S", "s", "V", "v"}
 
 func (in *GoApi) dfs(root *apiInstance, apiSt *apiInstance, visited map[string]bool, result *[]*apiInstance) error {
 	if lo.Contains(reservedNames, apiSt.ScopedName.Name) {
-		return fmt.Errorf("error srtuct of type CapabilityApi name clash with type params (can't be named [C,S,V]). %s.%s", apiSt.ScopedName.ModuleName, apiSt.ScopedName.Name)
+		return fmt.Errorf("error struct of type CapabilityApi name clash with type params (can't be named [C,S,V]). %s.%s", apiSt.ScopedName.ModuleName, apiSt.ScopedName.Name)
 	}
 	if visited[apiSt.ScopedName.Name] {
 		curr, _ := lo.Find(*result, func(it *apiInstance) bool {
@@ -112,6 +112,11 @@ func (in *GoApi) dfs(root *apiInstance, apiSt *apiInstance, visited map[string]b
 				ScopedName: apiRef,
 				Field:      &fi,
 			}
+			for _, param := range capSt.TypeParams {
+				if lo.Contains(reservedNames, param) {
+					return fmt.Errorf("error type param name clash for genenic API (can't be named [C,S,V]). %s.%s", apiRef.ModuleName, apiRef.Name)
+				}
+			}
 			err := in.dfs(nil, inst0, visited, result)
 			if err != nil {
 				return nil
@@ -149,10 +154,16 @@ func (in *GoApi) genInterface(
 	body *gogen.Generator,
 	inst *apiInstance,
 ) {
+	tps := gogen.TypeParam{}
+	if inst.Field != nil {
+		tps = tps.AddParams("C", "S")
+		tps = tps.AddParams(inst.Struct.TypeParams...)
+	}
 	body.Rr.Render(serviceParams{
-		G:     body,
-		Name:  inst.ScopedName.Name,
-		IsCap: inst.Field != nil,
+		G:          body,
+		Name:       inst.ScopedName.Name,
+		TypeParams: tps,
+		IsCap:      inst.Field != nil,
 	})
 	for _, fi := range inst.Struct.Fields {
 		if ref, ok := fi.TypeExpr.TypeRef.Cast_reference(); ok {
@@ -184,6 +195,7 @@ func (in *GoApi) genInterface(
 					Annotations: fi.Annotations,
 					C:           fi.TypeExpr.Parameters[0],
 					S:           fi.TypeExpr.Parameters[1],
+					Params:      apiTe.Parameters,
 				})
 			}
 		}
@@ -196,15 +208,28 @@ func (in *GoApi) genRegister(
 	inst *apiInstance,
 ) error {
 	ann := customtypes.MapMap[adlast.ScopedName, any]{}
-	var vte *adlast.TypeExpr
+	var (
+		vte *adlast.TypeExpr
+	)
+	tps := gogen.TypeParam{}
 	if inst.Field != nil {
+		// set CapabilityApi::V params as we want the generic version
+		inst.Field.TypeExpr.Parameters[2].Parameters = lo.Map[string, adlast.TypeExpr](inst.Struct.TypeParams, func(item string, index int) adlast.TypeExpr {
+			return adlast.Make_TypeExpr(
+				adlast.Make_TypeRef_typeParam(item),
+				[]adlast.TypeExpr{},
+			)
+		})
 		ann = inst.Field.Annotations
 		vte = &inst.Field.TypeExpr.Parameters[2]
+		tps = tps.AddParams("C", "S")
+		tps = tps.AddParams(inst.Struct.TypeParams...)
 	}
 	tkids := in.transKids("", &inst.Struct)
 	body.Rr.Render(registerParams{
 		G:           body,
 		Name:        inst.ScopedName.Name,
+		TypeParams:  tps,
 		IsCap:       inst.Field != nil,
 		V:           vte,
 		Annotations: ann,

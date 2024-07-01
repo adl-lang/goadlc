@@ -34,14 +34,16 @@ var (
 )
 
 type serviceParams struct {
-	G     *gogen.Generator
-	Name  string
-	IsCap bool
+	G          *gogen.Generator
+	Name       string
+	TypeParams gogen.TypeParam
+	IsCap      bool
 }
 
 type registerParams struct {
 	G           *gogen.Generator
 	Name        string
+	TypeParams  gogen.TypeParam
 	IsCap       bool
 	Annotations adlast.Annotations
 	V           *adlast.TypeExpr
@@ -91,4 +93,5 @@ type getcapapiParams struct {
 	Annotations adlast.Annotations
 	C           adlast.TypeExpr
 	S           adlast.TypeExpr
+	Params      []adlast.TypeExpr
 }

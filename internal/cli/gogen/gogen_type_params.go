@@ -72,6 +72,14 @@ func (tp TypeParam) MarshalJSON() ([]byte, error) {
 	return json.Marshal(tp.Params)
 }
 
+func (tp TypeParam) AddParams(newps ...string) TypeParam {
+	ntp := tp
+	for _, np := range newps {
+		ntp = ntp.AddParam(np)
+	}
+	return ntp
+}
+
 func (tp TypeParam) AddParam(newp string) TypeParam {
 	psMap := make(map[string]bool)
 	tp0 := make([]param, len(tp.Params)+1)

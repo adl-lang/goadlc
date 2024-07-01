@@ -1,12 +1,10 @@
 {{- $G := .G -}}
-{{if .IsCap}}func Register_{{.Name}}[C any, S any](
+func Register_{{.Name}}{{.TypeParams.LSide}}(
 	mux *{{.G.GoImport "http"}}ServeMux,
-	srv {{.Name}}_Service[C, S],
+	srv {{.Name}}_Service{{.TypeParams.RSide}},
+{{if .IsCap -}}
 	api capability.CapabilityApi[C, S, {{$G.GoType .V .Annotations}}],
 	capr capability.CapabilityRetriever[C, S],
-{{- else}}func Register_{{.Name}}(
-	mux *{{.G.GoImport "http"}}ServeMux,
-	srv {{.Name}}_Service,
 {{- end}}
 {{- range .CapApis}}{{$C := index .Field.TypeExpr.Parameters 0}}{{$S := index .Field.TypeExpr.Parameters 1}}
 	{{.Name | lower}}_capr {{$G.GoImport "capability"}}CapabilityRetriever[{{$G.GoType $C .Field.Annotations}}, {{$G.GoType $S .Field.Annotations}}],
