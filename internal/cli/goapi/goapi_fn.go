@@ -5,6 +5,7 @@ import (
 	fp "path/filepath"
 	"strings"
 
+	goadl "github.com/adl-lang/goadl_rt/v3"
 	"github.com/adl-lang/goadl_rt/v3/customtypes"
 	"github.com/adl-lang/goadl_rt/v3/sys/adlast"
 	"github.com/adl-lang/goadlc/internal/cli/gogen"
@@ -24,17 +25,8 @@ func (in *GoApi) Run() error {
 	}
 	st, ok := decl0.Type_.Cast_struct_()
 	if !ok || len(st.TypeParams) != 0 {
-		return fmt.Errorf("unexpected - apiRequests is not a monomorphic struct")
+		return fmt.Errorf("unexpected - apiRequests is not a struct, or is a struct with generic type params")
 	}
-	apiSt := adlast.Make_Struct(
-		[]string{},
-		lo.Map[adlast.Field](st.Fields, func(f adlast.Field, _ int) adlast.Field {
-			te := ExpandTypeAliases(in.Loader, f.TypeExpr)
-			return adlast.MakeAll_Field(
-				f.Name, f.SerializedName, te, f.Default, f.Annotations,
-			)
-		}),
-	)
 	midPath, err := goimports.MidPath(in.Outputdir, in.GoMod.RootDir)
 	if err != nil {
 		return err
@@ -51,7 +43,7 @@ func (in *GoApi) Run() error {
 		Rr:      gogen.TemplateRenderer{Tmpl: templates},
 	}
 	apis := &apiInstance{
-		Struct:     apiSt,
+		Struct:     ExpandStruct(in.Loader, st),
 		ScopedName: in.ApiStruct,
 		Field:      nil,
 	}
@@ -61,15 +53,7 @@ func (in *GoApi) Run() error {
 	if err != nil {
 		return err
 	}
-	in.genInterface(body, apis)
-	in.genRegister(body, apis)
-	for _, apis0 := range result0[1:] {
-		result1 := []*apiInstance{}
-		visited1 := map[string]bool{}
-		err = in.dfs(apis, apis, visited1, &result1)
-		if err != nil {
-			return err
-		}
+	for _, apis0 := range result0 {
 		in.genInterface(body, apis0)
 		in.genRegister(body, apis0)
 	}
@@ -124,7 +108,7 @@ func (in *GoApi) dfs(root *apiInstance, apiSt *apiInstance, visited map[string]b
 				return fmt.Errorf("unexpected - cap api is not a struct. Ref : %v", apiRef)
 			}
 			inst0 := &apiInstance{
-				Struct:     capSt,
+				Struct:     ExpandStruct(in.Loader, capSt),
 				ScopedName: apiRef,
 				Field:      &fi,
 			}
@@ -289,6 +273,29 @@ func (in *GoApi) GoImport(pkg string, currModuleName string, imports goimports.I
 	}
 }
 
+func ExpandStruct(lr *loader.LoadResult, st adlast.Struct) adlast.Struct {
+	return adlast.Make_Struct(
+		st.TypeParams,
+		lo.Map[adlast.Field](st.Fields, func(f adlast.Field, _ int) adlast.Field {
+			te := ExpandTypeAliases(lr, f.TypeExpr)
+			return adlast.MakeAll_Field(
+				f.Name, f.SerializedName, te, f.Default, f.Annotations,
+			)
+		}),
+	)
+}
+
 func ExpandTypeAliases(lr *loader.LoadResult, te adlast.TypeExpr) adlast.TypeExpr {
+	if ref, ok := te.TypeRef.Cast_reference(); ok {
+		if decl, ex := lr.Resolver(ref); !ex {
+			panic(fmt.Errorf("can't resolve type alias, %v ", ref))
+		} else {
+			if ta, ok1 := decl.Type_.Cast_type_(); ok1 {
+				binding := goadl.CreateDecBoundTypeParams(ta.TypeParams, ta.TypeExpr.Parameters)
+				mono, _ := goadl.SubstituteTypeBindings(binding, ta.TypeExpr)
+				return ExpandTypeAliases(lr, mono)
+			}
+		}
+	}
 	return te
 }
