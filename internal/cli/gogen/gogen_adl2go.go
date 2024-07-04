@@ -193,7 +193,7 @@ func (in *BaseGen) PrimitiveMap(
 	elem := in.goType(params[0], unionTypeParams, anns)
 	switch p {
 	case "TypeToken":
-		pkg, err := in.Cli.GoImport("adlast", in.ModuleName, in.Imports)
+		pkg, err := in.Cli.GoImport("adlast", in.ModuleName, &in.Imports)
 		if err != nil {
 			panic(err)
 		}

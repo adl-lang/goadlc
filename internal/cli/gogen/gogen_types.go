@@ -18,7 +18,7 @@ import (
 type SnResolver func(sn adlast.ScopedName) (*adlast.Decl, bool)
 
 type SubTask interface {
-	GoImport(pkg, currModuleName string, imports goimports.Imports) (string, error)
+	GoImport(pkg, currModuleName string, imports *goimports.Imports) (string, error)
 	ReservedImports() []goimports.ImportSpec
 	IsStdLibGen() bool
 	GoAdlImportPath() string
@@ -67,7 +67,7 @@ func (in *Generator) GoImport(s string) (string, error) {
 			panic(r)
 		}
 	}()
-	return in.Cli.GoImport(s, in.ModuleName, in.Imports)
+	return in.Cli.GoImport(s, in.ModuleName, &in.Imports)
 }
 
 func (in *Generator) ToTitle(s string) string {

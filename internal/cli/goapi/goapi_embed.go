@@ -42,6 +42,7 @@ type serviceParams struct {
 
 type registerParams struct {
 	G           *gogen.Generator
+	CapModule   string
 	Name        string
 	TypeParams  gogen.TypeParam
 	IsCap       bool
@@ -68,15 +69,17 @@ type getParams struct {
 }
 
 type regpostParams struct {
-	G     *gogen.Generator
-	Name  string
-	IsCap bool
+	G      *gogen.Generator
+	Module string
+	Name   string
+	IsCap  bool
 }
 type reggetParams regpostParams
 
 type regcapapiParams struct {
 	G          *gogen.Generator
 	StructName string
+	Module     string
 	Name       string
 	Kids       []tkid
 }

@@ -235,7 +235,7 @@ func (bg *Generator) strRep(te adlast.TypeExpr) string {
 		},
 		nil,
 	)
-	bg.Cli.GoImport("adlast", bg.ModuleName, bg.Imports)
+	bg.Cli.GoImport("adlast", bg.ModuleName, &bg.Imports)
 	params := lo.Map[adlast.TypeExpr, string](te.Parameters, func(a adlast.TypeExpr, _ int) string {
 		return bg.strRep(a)
 	})
@@ -264,7 +264,7 @@ func (bg *goval_gen) goStruct(
 		bg.path = append(bg.path, fld.Name)
 		ret := []string{}
 		if bg.genAdlAst && fld.Name == "annotations" {
-			bg.Cli.GoImport("customtypes", bg.ModuleName, bg.Imports)
+			bg.Cli.GoImport("customtypes", bg.ModuleName, &bg.Imports)
 			anns := mval[fld.SerializedName].([]any)
 			annvs := []string{}
 			for _, mapEntry := range anns {
@@ -430,7 +430,7 @@ func (bg *goval_gen) goValuePrimitive(
 	// }
 	switch primitive {
 	case "TypeToken":
-		pkg, err := bg.Cli.GoImport("adlast", bg.ModuleName, bg.Imports)
+		pkg, err := bg.Cli.GoImport("adlast", bg.ModuleName, &bg.Imports)
 		if err != nil {
 			panic(err)
 		}
@@ -481,7 +481,7 @@ func (bg *goval_gen) goValuePrimitive(
 		if val == nil {
 			return "nil"
 		}
-		gl, _ := bg.Cli.GoImport("goadl", bg.ModuleName, bg.Imports)
+		gl, _ := bg.Cli.GoImport("goadl", bg.ModuleName, &bg.Imports)
 		return gl + "Addr(" + bg.goValue(anns, te.Parameters[0], val) + ")"
 	}
 	panic("Unknown GoValuePrimitive")

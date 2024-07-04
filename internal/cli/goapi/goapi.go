@@ -13,11 +13,12 @@ type GoApi struct {
 }
 
 type _GoApi struct {
-	Root      *root.Root         `json:"-"`
-	Loader    *loader.LoadResult `json:"-"`
-	GoMod     *gomod.GoModResult `json:"-"`
-	ApiStruct adlast.ScopedName  `json:"ApiStruct"`
-	Outputdir string             `json:"Outputdir"`
+	Root              *root.Root         `json:"-"`
+	Loader            *loader.LoadResult `json:"-"`
+	GoMod             *gomod.GoModResult `json:"-"`
+	ApiStruct         adlast.ScopedName  `json:"ApiStruct"`
+	Outputdir         string             `json:"Outputdir"`
+	GoAdlCommonImport string             `json:"GoAdlCommonImport"`
 }
 
 func MakeAll_GoApi(
@@ -26,14 +27,16 @@ func MakeAll_GoApi(
 	gomod *gomod.GoModResult,
 	apistruct adlast.ScopedName,
 	outputdir string,
+	goadlcommonimport string,
 ) GoApi {
 	return GoApi{
 		_GoApi{
-			Root:      root,
-			Loader:    loader,
-			GoMod:     gomod,
-			ApiStruct: apistruct,
-			Outputdir: outputdir,
+			Root:              root,
+			Loader:            loader,
+			GoMod:             gomod,
+			ApiStruct:         apistruct,
+			Outputdir:         outputdir,
+			GoAdlCommonImport: goadlcommonimport,
 		},
 	}
 }
@@ -41,14 +44,16 @@ func MakeAll_GoApi(
 func Make_GoApi(
 	apistruct adlast.ScopedName,
 	outputdir string,
+	goadlcommonimport string,
 ) GoApi {
 	ret := GoApi{
 		_GoApi{
-			Root:      ((*GoApi)(nil)).Default_root(),
-			Loader:    ((*GoApi)(nil)).Default_loader(),
-			GoMod:     ((*GoApi)(nil)).Default_goMod(),
-			ApiStruct: apistruct,
-			Outputdir: outputdir,
+			Root:              ((*GoApi)(nil)).Default_root(),
+			Loader:            ((*GoApi)(nil)).Default_loader(),
+			GoMod:             ((*GoApi)(nil)).Default_goMod(),
+			ApiStruct:         apistruct,
+			Outputdir:         outputdir,
+			GoAdlCommonImport: goadlcommonimport,
 		},
 	}
 	return ret

@@ -228,6 +228,7 @@ func (in *GoApi) genRegister(
 	tkids := in.transKids("", &inst.Struct)
 	body.Rr.Render(registerParams{
 		G:           body,
+		CapModule:   "common.capability",
 		Name:        inst.ScopedName.Name,
 		TypeParams:  tps,
 		IsCap:       inst.Field != nil,
@@ -240,15 +241,17 @@ func (in *GoApi) genRegister(
 			switch ref.Name {
 			case "HttpPost":
 				body.Rr.Render(regpostParams{
-					G:     body,
-					Name:  fi.Name,
-					IsCap: inst.Field != nil,
+					G:      body,
+					Module: ref.ModuleName,
+					Name:   fi.Name,
+					IsCap:  inst.Field != nil,
 				})
 			case "HttpGet":
 				body.Rr.Render(reggetParams{
-					G:     body,
-					Name:  fi.Name,
-					IsCap: inst.Field != nil,
+					G:      body,
+					Module: ref.ModuleName,
+					Name:   fi.Name,
+					IsCap:  inst.Field != nil,
 				})
 			case "CapabilityApi":
 				apiTe := fi.TypeExpr.Parameters[2]
@@ -260,6 +263,7 @@ func (in *GoApi) genRegister(
 				body.Rr.Render(regcapapiParams{
 					G:          body,
 					StructName: apiRef.Name,
+					Module:     ref.ModuleName,
 					Name:       fi.Name,
 					Kids:       tkid,
 				})
@@ -274,7 +278,8 @@ func (in *GoApi) ReservedImports() []goimports.ImportSpec {
 	return []goimports.ImportSpec{
 		{Path: "net/http"},
 		{Path: "context"},
-		{Path: "github.com/helix-collective/go_protoapp/common/capability"},
+		// {Path: in.GoAdlCommonImport + "/common/http", Name: "http2", Aliased: true},
+		// {Path: in.GoAdlCommonImport + "/common/capability"},
 	}
 }
 
@@ -289,7 +294,18 @@ func (bg *GoApi) GoAdlImportPath() string {
 }
 
 // GoImport implements gogen.SubTask.
-func (in *GoApi) GoImport(pkg string, currModuleName string, imports goimports.Imports) (string, error) {
+func (in *GoApi) GoImport(pkg string, currModuleName string, imports *goimports.Imports) (string, error) {
+	if strings.Contains(pkg, ".") {
+		parts := strings.Split(pkg, ".")
+		spec := goimports.ImportSpec{
+			Name: parts[len(parts)-1],
+			Path: in.GoAdlCommonImport + "/" + strings.Join(parts, "/"),
+		}
+		if spec0, ok := imports.ByPath(spec.Path); ok {
+			return spec0.Name + ".", nil
+		}
+		return imports.AddSpec(spec) + ".", nil
+	}
 	if spec, ok := imports.ByName(pkg); !ok {
 		return "", fmt.Errorf("unknown import %s", pkg)
 	} else {

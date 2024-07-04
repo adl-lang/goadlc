@@ -83,6 +83,7 @@ func (i *Imports) AddModule(module string, modulePath, midPath string) (name str
 				Aliased: false,
 			}
 			if i.Used[spec.Path] {
+				spec, _ = i.ByPath(spec.Path)
 				return spec.Name
 			}
 			spec0 := i.reserveSpec(spec)

@@ -141,7 +141,7 @@ func (in *GoTypes) specialTexpr() map[string]struct{} {
 	}
 }
 
-func (bg *GoTypes) GoImport(pkg string, currModuleName string, imports goimports.Imports) (string, error) {
+func (bg *GoTypes) GoImport(pkg string, currModuleName string, imports *goimports.Imports) (string, error) {
 	if _, ok := bg.specialTexpr()[currModuleName]; ok && bg._GoTypes.StdLibGen && pkg == "goadl" {
 		return "", nil
 	}
