@@ -28,6 +28,11 @@ struct GoType {
 
 struct GoHelperType {
     String name;
+    /// use null if helper is in the same go package as the generated decl
+    Nullable<GoPkg> ref = null;
+};
+
+struct GoPkg {
     String pkg;
     String import_path;
 };

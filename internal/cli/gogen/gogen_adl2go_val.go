@@ -199,12 +199,14 @@ func (bg *Generator) goCustomType(
 		return bg.strRep(a)
 	})
 
-	{
-		pkg := gct.Helpers.Import_path[strings.LastIndex(gct.Helpers.Import_path, "/")+1:]
+	helperName := gct.Helpers.Name
+	if gct.Helpers.Ref != nil {
+		helperName = gct.Helpers.Ref.Pkg + "." + gct.Helpers.Name
+		pkg := gct.Helpers.Ref.Import_path[strings.LastIndex(gct.Helpers.Ref.Import_path, "/")+1:]
 		spec := goimports.ImportSpec{
-			Path:    gct.Helpers.Import_path,
-			Name:    gct.Helpers.Pkg,
-			Aliased: gct.Helpers.Pkg != pkg,
+			Path:    gct.Helpers.Ref.Import_path,
+			Name:    gct.Helpers.Ref.Pkg,
+			Aliased: gct.Helpers.Ref.Pkg != pkg,
 		}
 		bg.Imports.AddSpec(spec)
 	}
@@ -215,7 +217,7 @@ func (bg *Generator) goCustomType(
 		TypeParams:       gt.TypeParams,
 		AnyValue:         fmt.Sprintf("%+#v", val),
 		CustomType:       gct.Gotype.Pkg + "." + gct.Gotype.Name,
-		CustomTypeHelper: gct.Helpers.Pkg + "." + gct.Helpers.Name,
+		CustomTypeHelper: helperName,
 		TypeExprStrs:     typeExprStrs,
 	})
 	return gen.Rr.Buf.String()

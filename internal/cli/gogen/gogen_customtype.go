@@ -23,23 +23,27 @@ func (in *Generator) GoRegisterHelper(moduleName string, decl adlast.Decl) (stri
 	if gct == nil {
 		return "", nil
 	}
-	if in.Cli.IsStdLibGen() && gct.Helpers.Import_path == in.Cli.GoAdlImportPath() {
+	if in.Cli.IsStdLibGen() && gct.Helpers.Ref != nil && gct.Helpers.Ref.Import_path == in.Cli.GoAdlImportPath() {
 		return fmt.Sprintf(`	RESOLVER.RegisterHelper(
 			adlast.Make_ScopedName("%s", "%s"),
 			(*%s)(nil),
 		)
 `, moduleName, decl.Name, gct.Helpers.Name), nil
 	}
-	pkg := gct.Helpers.Import_path[strings.LastIndex(gct.Helpers.Import_path, "/")+1:]
-	spec := goimports.ImportSpec{
-		Path:    gct.Helpers.Import_path,
-		Name:    gct.Helpers.Pkg,
-		Aliased: gct.Helpers.Pkg != pkg,
+	helperName := gct.Helpers.Name
+	if gct.Helpers.Ref != nil {
+		helperName = gct.Helpers.Ref.Pkg + "." + gct.Helpers.Name
+		pkg := gct.Helpers.Ref.Import_path[strings.LastIndex(gct.Helpers.Ref.Import_path, "/")+1:]
+		spec := goimports.ImportSpec{
+			Path:    gct.Helpers.Ref.Import_path,
+			Name:    gct.Helpers.Ref.Pkg,
+			Aliased: gct.Helpers.Ref.Pkg != pkg,
+		}
+		in.Imports.AddSpec(spec)
 	}
-	in.Imports.AddSpec(spec)
-	return fmt.Sprintf(`	RESOLVER.RegisterHelper(
+	return fmt.Sprintf(`	goadl.RESOLVER.RegisterHelper(
 			adlast.Make_ScopedName("%s", "%s"),
-			(*%s%s)(nil),
+			(*%s)(nil),
 		)
-`, moduleName, decl.Name, gct.Helpers.Pkg+".", gct.Helpers.Name), nil
+`, moduleName, decl.Name, helperName), nil
 }

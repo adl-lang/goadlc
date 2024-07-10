@@ -12,8 +12,10 @@ annotation Set GoCustomType {
   },
   "helpers" : {
     "name": "SetHelper",
-    "pkg": "customtypes",
-    "import_path": "github.com/adl-lang/goadl_rt/v3/customtypes"
+    "ref": {
+      "pkg": "customtypes",
+      "import_path": "github.com/adl-lang/goadl_rt/v3/customtypes"
+    }
   }
 };
 
@@ -26,8 +28,10 @@ annotation Map GoCustomType {
   },
   "helpers" : {
     "name": "MapHelper",
-    "pkg": "customtypes",
-    "import_path": "github.com/adl-lang/goadl_rt/v3/customtypes"
+    "ref": {
+      "pkg": "customtypes",
+      "import_path": "github.com/adl-lang/goadl_rt/v3/customtypes"
+    }
   }
 };
 
