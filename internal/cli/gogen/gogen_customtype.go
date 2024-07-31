@@ -23,13 +23,6 @@ func (in *Generator) GoRegisterHelper(moduleName string, decl adlast.Decl) (stri
 	if gct == nil {
 		return "", nil
 	}
-	if in.Cli.IsStdLibGen() && gct.Helpers.Ref != nil && gct.Helpers.Ref.Import_path == in.Cli.GoAdlImportPath() {
-		return fmt.Sprintf(`	RESOLVER.RegisterHelper(
-			adlast.Make_ScopedName("%s", "%s"),
-			(*%s)(nil),
-		)
-`, moduleName, decl.Name, gct.Helpers.Name), nil
-	}
 	helperName := gct.Helpers.Name
 	if gct.Helpers.Ref != nil {
 		helperName = gct.Helpers.Ref.Pkg + "." + gct.Helpers.Name
@@ -40,6 +33,14 @@ func (in *Generator) GoRegisterHelper(moduleName string, decl adlast.Decl) (stri
 			Aliased: gct.Helpers.Ref.Pkg != pkg,
 		}
 		in.Imports.AddSpec(spec)
+	}
+	// if this gets into trouble use in.GoImport
+	if in.Cli.IsStdLibGen() {
+		return fmt.Sprintf(`	RESOLVER.RegisterHelper(
+			adlast.Make_ScopedName("%s", "%s"),
+			(*%s)(nil),
+		)
+`, moduleName, decl.Name, helperName), nil
 	}
 	return fmt.Sprintf(`	goadl.RESOLVER.RegisterHelper(
 			adlast.Make_ScopedName("%s", "%s"),
