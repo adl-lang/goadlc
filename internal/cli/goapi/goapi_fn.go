@@ -90,36 +90,56 @@ func (in *GoApi) dfs(root *apiInstance, apiSt *apiInstance, visited map[string]b
 	visited[apiSt.ScopedName.Name] = true
 	*result = append(*result, apiSt)
 	for _, fi := range apiSt.Struct.Fields {
-		if ref, ok := fi.TypeExpr.TypeRef.Cast_reference(); ok && ref.Name == "CapabilityApi" {
-			if lo.Contains(reservedNames, fi.Name) {
-				return fmt.Errorf("error fields of type CapabilityApi name clash with type params (can't be named [C,S,V]). %s.%s::%s", apiSt.ScopedName.ModuleName, apiSt.ScopedName.Name, fi.Name)
-			}
-			apiTe := fi.TypeExpr.Parameters[2]
-			apiRef, ok := apiTe.TypeRef.Cast_reference()
-			if !ok {
-				return fmt.Errorf("unexpected - cap api is not a ref. TypeExpre : %v", apiTe)
-			}
-			decl, exist := in.Loader.Resolver(apiRef)
-			if !exist {
-				return fmt.Errorf("can't resolve decl. Ref : %v", apiRef)
-			}
-			capSt, ok := decl.Type_.Cast_struct_()
-			if !ok {
-				return fmt.Errorf("unexpected - cap api is not a struct. Ref : %v", apiRef)
-			}
-			inst0 := &apiInstance{
-				Struct:     ExpandStruct(in.Loader, capSt),
-				ScopedName: apiRef,
-				Field:      &fi,
-			}
-			for _, param := range capSt.TypeParams {
-				if lo.Contains(reservedNames, param) {
-					return fmt.Errorf("error type param name clash for genenic API (can't be named [C,S,V]). %s.%s", apiRef.ModuleName, apiRef.Name)
+		if ref, ok := fi.TypeExpr.TypeRef.Cast_reference(); ok {
+			if ref.Name == "CapabilityApi" {
+				if lo.Contains(reservedNames, fi.Name) {
+					return fmt.Errorf("error fields of type CapabilityApi name clash with type params (can't be named [C,S,V]). %s.%s::%s", apiSt.ScopedName.ModuleName, apiSt.ScopedName.Name, fi.Name)
 				}
-			}
-			err := in.dfs(nil, inst0, visited, result)
-			if err != nil {
-				return nil
+				apiTe := fi.TypeExpr.Parameters[2]
+				apiRef, ok := apiTe.TypeRef.Cast_reference()
+				if !ok {
+					return fmt.Errorf("unexpected - cap api is not a ref. TypeExpre : %v", apiTe)
+				}
+				decl, exist := in.Loader.Resolver(apiRef)
+				if !exist {
+					return fmt.Errorf("can't resolve decl. Ref : %v", apiRef)
+				}
+				capSt, ok := decl.Type_.Cast_struct_()
+				if !ok {
+					return fmt.Errorf("unexpected - cap api is not a struct. Ref : %v", apiRef)
+				}
+				inst0 := &apiInstance{
+					Struct:     ExpandStruct(in.Loader, capSt),
+					ScopedName: apiRef,
+					Field:      &fi,
+				}
+				for _, param := range capSt.TypeParams {
+					if lo.Contains(reservedNames, param) {
+						return fmt.Errorf("error type param name clash for genenic API (can't be named [C,S,V]). %s.%s", apiRef.ModuleName, apiRef.Name)
+					}
+				}
+				err := in.dfs(nil, inst0, visited, result)
+				if err != nil {
+					return nil
+				}
+			} else if ref.ModuleName != "common.http" && ref.ModuleName != "common.capability" {
+				decl, exist := in.Loader.Resolver(ref)
+				if !exist {
+					return fmt.Errorf("can't resolve decl. Ref : %v", ref)
+				}
+				struct_, ok := decl.Type_.Cast_struct_()
+				if !ok {
+					return fmt.Errorf("unexpected - api is not a struct. Ref : %v", ref)
+				}
+				inst0 := &apiInstance{
+					Struct:     ExpandStruct(in.Loader, struct_),
+					ScopedName: ref,
+					Field:      nil,
+				}
+				err := in.dfs(nil, inst0, visited, result)
+				if err != nil {
+					return nil
+				}
 			}
 		}
 	}
@@ -197,8 +217,20 @@ func (in *GoApi) genInterface(
 					S:           fi.TypeExpr.Parameters[1],
 					Params:      apiTe.Parameters,
 				})
+			default:
+				rd, _ := body.Resolver(ref)
+				if _, ok := rd.Type_.Cast_struct_(); ok {
+					body.Rr.Render(getapiParams{
+						G:           body,
+						Name:        fi.Name,
+						StructName:  ref.Name,
+						Annotations: fi.Annotations,
+						Params:      fi.TypeExpr.Parameters,
+					})
+				}
 			}
 		}
+
 	}
 	body.Rr.Buf.WriteString("}\n")
 }
@@ -267,6 +299,16 @@ func (in *GoApi) genRegister(
 					Name:       fi.Name,
 					Kids:       tkid,
 				})
+			default:
+				rd, _ := body.Resolver(ref)
+				if _, ok := rd.Type_.Cast_struct_(); ok {
+					body.Rr.Render(regapiParams{
+						G:          body,
+						StructName: ref.Name,
+						Module:     ref.ModuleName,
+						Name:       fi.Name,
+					})
+				}
 			}
 		}
 	}

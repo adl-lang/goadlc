@@ -21,16 +21,9 @@ import (
 
 func main() {
 	rt := goadl.Addr(root.Make_Root())
-	flag.BoolVar(&rt.Debug, "debug", false, "Print extra diagnostic information, especially about files being read/written")
-	flag.BoolVar(&rt.DumpConfig, "dump-config", false, "Dump the config to stdout and exits")
-	flag.StringVar(&rt.Cfg, "cfg", "", "Config file in json format")
-	flag.Parse()
-	if rt.Cfg == "" {
-		flag.Usage()
-		os.Exit(1)
-	}
 	ld := &loader.Loader{}
-	gm := &gomod.GoModule{}
+	gm := gomod.Make_GoModule_GoModFile("")
+	// gm := &gomod.GoModule{}
 	gg := &gengo.GenGo{}
 	gt := &gotypes.GoTypes{}
 
@@ -41,7 +34,24 @@ func main() {
 	gg.Loader = ld
 	gg.GoTypes = gt
 	gg.Root = rt
-	gg.Mod = gm
+	gg.Mod = &gm
+
+	flag.BoolVar(&rt.Debug, "debug", false, "Print extra diagnostic information, especially about files being read/written")
+	flag.BoolVar(&rt.DumpConfig, "dump-config", false, "Dump the config to stdout and exits")
+	flag.StringVar(&rt.Cfg, "cfg", "", "Config file in json format")
+	flag.Parse()
+	if rt.DumpConfig {
+		err := root.DumpConfig(*rt, gengo.Texpr_GenGo(), *gg)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "Error dummping cfg : %v\n", err)
+			os.Exit(1)
+		}
+		return
+	}
+	if rt.Cfg == "" {
+		flag.Usage()
+		os.Exit(1)
+	}
 
 	if err := root.ReadConfig(*rt, gengo.Texpr_GenGo(), gg); err != nil {
 		fmt.Fprintf(os.Stderr, "Error read cfg : %v\n", err)
@@ -54,14 +64,6 @@ func main() {
 
 	tmplVar(&gg.Loader.WorkingDir)
 	tmplVar(&gg.Loader.UserCacheDir)
-	if rt.DumpConfig {
-		err := root.DumpConfig(*rt, gengo.Texpr_GenGo(), *gg)
-		if err != nil {
-			fmt.Fprintf(os.Stderr, "Error dummping cfg : %v\n", err)
-			os.Exit(1)
-		}
-		return
-	}
 	err := gg.Run()
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)

@@ -84,6 +84,14 @@ type regcapapiParams struct {
 	Kids       []tkid
 }
 
+type regapiParams struct {
+	G          *gogen.Generator
+	StructName string
+	Module     string
+	Name       string
+	// Kids       []tkid
+}
+
 type tkid struct {
 	Name  string
 	Field *adlast.Field
@@ -96,5 +104,13 @@ type getcapapiParams struct {
 	Annotations adlast.Annotations
 	C           adlast.TypeExpr
 	S           adlast.TypeExpr
+	Params      []adlast.TypeExpr
+}
+
+type getapiParams struct {
+	G           *gogen.Generator
+	Name        string
+	StructName  string
+	Annotations adlast.Annotations
 	Params      []adlast.TypeExpr
 }
